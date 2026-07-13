@@ -196,7 +196,7 @@ void signal_handler(int sig)
 
 void main_loop()
 {
-
+    //input
     char input_string[MAX_INPUT_SIZE];
 
     char *args[MAX_ARGS];
