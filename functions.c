@@ -31,9 +31,9 @@ void handle_redirection_and_piping(char **ptr)
 
         if (pid == 0)
         {
-            
+
             // printf("%d\n",pidno[i]);
-            
+
             char *args[MAX_ARGS];
 
             parse_command(ptr[i], args);
@@ -58,7 +58,7 @@ void handle_redirection_and_piping(char **ptr)
             execvp(args[0], args);
         }
         else
-        pidno[i]=pid;
+            pidno[i] = pid;
     }
 
     for (int i = 0; i < count - 1; i++)
@@ -75,7 +75,7 @@ void handle_redirection_and_piping(char **ptr)
 
     for (int i = 0; i < count; i++)
     {
-        waitpid(pidno[i],&status,WUNTRACED);
+        waitpid(pidno[i], &status, WUNTRACED);
     }
 }
 pid_t pidex;
@@ -99,9 +99,9 @@ void handle_external_command(char **args)
     else
     {
         waitpid(pidex, NULL, WUNTRACED);
-        pidex=0;//after executing one command  and cntrl+z is pressed main prompt will print and pidex will be having the child pid
-        //which is >0 so if u press again the cntrl+z it will call ownhandler and pidex==0 will be false and ownhandler prompt will
-        //not print so u need to reset the pidex=0;
+        pidex = 0; // after executing one command  and cntrl+z is pressed main prompt will print and pidex will be having the child pid
+        // which is >0 so if u press again the cntrl+z it will call ownhandler and pidex==0 will be false and ownhandler prompt will
+        // not print so u need to reset the pidex=0;
     }
 }
 
@@ -125,7 +125,7 @@ void handle_builtin_command(char **args)
     {
         exit(0);
     }
-    else if (strcmp(args[0], "echo") == 0) // exco -> printf
+    else if (strcmp(args[0], "echo") == 0)
     {
         if (args[1] == NULL)
         {
@@ -212,7 +212,6 @@ void main_loop()
         else
             printf("%s", prompt);
 
-            
         if (!promps1)
         {
             if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
@@ -221,10 +220,10 @@ void main_loop()
             }
             printf("$ ");
         }
-            
+
         fflush(stdout);
 
-        if (scanf(" %1023[^\n]", input_string)==EOF)
+        if (scanf(" %1023[^\n]", input_string) == EOF)
         {
             printf("\n");
             exit(0);
