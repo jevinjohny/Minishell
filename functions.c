@@ -166,10 +166,11 @@ void signal_handler(int sig)
 {
     if (sig == SIGINT)
     {
+        printf("\n");
         if (pidex == 0)
         {
             printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
-
+            
             if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
             {
                 printf(ANSI_COLOR_RED ANSI_BOLD "%s own handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
@@ -178,6 +179,7 @@ void signal_handler(int sig)
     }
     else if (sig == SIGTSTP)
     {
+        printf("\n");
         if (pidex == 0)
         {
             printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
@@ -192,6 +194,8 @@ void signal_handler(int sig)
             printf("\n");
         }
     }
+    fflush(stdout);
+
 }
 
 void main_loop()
@@ -223,11 +227,21 @@ void main_loop()
 
         fflush(stdout);
 
-        if (scanf(" %1023[^\n]", input_string) == EOF)
+        if ( fgets(input_string,1024, stdin) == NULL)
         {
+
             printf("\n");
+
             exit(0);
         }
+
+        input_string[strcspn(input_string,"\n")]='\0';
+
+        if (input_string[0]=='\0')
+        {
+            continue;
+        }
+
 
         int ps1_flag = 1;
 
@@ -303,7 +317,7 @@ int is_builtin_command(char **args)
         }
     }
 
-    char *external[] = {"wc", "bash", "bunzip2", "busybox", "bzcat", "bzcmp", "bzdiff", "bzegrep", "bzexe",
+    char *external[] = {"clear","wc", "bash", "bunzip2", "busybox", "bzcat", "bzcmp", "bzdiff", "bzegrep", "bzexe",
                         "bzfgrep", "bzgrep", "bzip2", "bzip2recover", "bzless", "bzmore", "cat", "chacl",
                         "chgrp", "chmod", "chown", "chvt", "cp", "cpio", "dash", "date", "dbus-cleanup-sockets",
                         "dbus-daemon", "dbus-uuidgen", "dd", "df", "dir", "dmesg", "dnsdomainname", "domainname",
