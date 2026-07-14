@@ -27,9 +27,9 @@
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 #define MAX_JOBS 64
-#define BUILTIN		1
-#define EXTERNAL	2
-#define NO_COMMAND  3
+#define BUILTIN 1
+#define EXTERNAL 2
+#define NO_COMMAND 3
 
 // Job control structures
 typedef struct Job

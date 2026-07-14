@@ -31,9 +31,6 @@ void handle_redirection_and_piping(char **ptr)
 
         if (pid == 0)
         {
-
-            // printf("%d\n",pidno[i]);
-
             char *args[MAX_ARGS];
 
             parse_command(ptr[i], args);
@@ -54,7 +51,6 @@ void handle_redirection_and_piping(char **ptr)
 
                 close(fd[j][1]);
             }
-
             execvp(args[0], args);
         }
         else
@@ -67,17 +63,12 @@ void handle_redirection_and_piping(char **ptr)
 
         close(fd[i][1]);
     }
-
-    // for (int i = 0; i < count; i++)
-    // {
-    //     wait(NULL);
-    // }
-
     for (int i = 0; i < count; i++)
     {
         waitpid(pidno[i], &status, WUNTRACED);
     }
 }
+
 pid_t pidex;
 
 void handle_external_command(char **args)
@@ -167,10 +158,11 @@ void signal_handler(int sig)
     if (sig == SIGINT)
     {
         printf("\n");
+
         if (pidex == 0)
         {
             printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
-            
+
             if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
             {
                 printf(ANSI_COLOR_RED ANSI_BOLD "%s own handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
@@ -180,6 +172,7 @@ void signal_handler(int sig)
     else if (sig == SIGTSTP)
     {
         printf("\n");
+
         if (pidex == 0)
         {
             printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
@@ -189,18 +182,13 @@ void signal_handler(int sig)
                 printf(ANSI_COLOR_RED ANSI_BOLD "%s own handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
             }
         }
-        else
-        {
-            printf("\n");
-        }
     }
     fflush(stdout);
-
 }
 
 void main_loop()
 {
-    //input
+    // input
     char input_string[MAX_INPUT_SIZE];
 
     char *args[MAX_ARGS];
@@ -227,7 +215,7 @@ void main_loop()
 
         fflush(stdout);
 
-        if ( fgets(input_string,1024, stdin) == NULL)
+        if (fgets(input_string, 1024, stdin) == NULL)
         {
 
             printf("\n");
@@ -235,13 +223,12 @@ void main_loop()
             exit(0);
         }
 
-        input_string[strcspn(input_string,"\n")]='\0';
+        input_string[strcspn(input_string, "\n")] = '\0';
 
-        if (input_string[0]=='\0')
+        if (input_string[0] == '\0')
         {
             continue;
         }
-
 
         int ps1_flag = 1;
 
@@ -317,7 +304,7 @@ int is_builtin_command(char **args)
         }
     }
 
-    char *external[] = {"clear","wc", "bash", "bunzip2", "busybox", "bzcat", "bzcmp", "bzdiff", "bzegrep", "bzexe",
+    char *external[] = {"clear", "wc", "bash", "bunzip2", "busybox", "bzcat", "bzcmp", "bzdiff", "bzegrep", "bzexe",
                         "bzfgrep", "bzgrep", "bzip2", "bzip2recover", "bzless", "bzmore", "cat", "chacl",
                         "chgrp", "chmod", "chown", "chvt", "cp", "cpio", "dash", "date", "dbus-cleanup-sockets",
                         "dbus-daemon", "dbus-uuidgen", "dd", "df", "dir", "dmesg", "dnsdomainname", "domainname",
@@ -366,8 +353,4 @@ void parse_command(char *input, char **args)
 void init_shell()
 {
     system("clear");
-    // Initialize the shell (e.g., set up environment, signal handlers)
-    // init_signal_handlers();
 }
-
-// ctrl+c,fg ,bg,jobs,ctrl+d
