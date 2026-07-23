@@ -34,7 +34,7 @@
 // Job control structures
 typedef struct Job
 {
-    // int job_id;
+    int job_id;
     pid_t pid;
     char command[MAX_INPUT_SIZE];
     struct Job *next;

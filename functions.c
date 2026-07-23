@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include "minishell.h"
 
+int count = 1;
+
 Job *head = NULL;
 
 pid_t job_pid;
 
 char prompt[] = "minishell";
+
+char input_string[MAX_INPUT_SIZE];
 
 char input_cpy[MAX_INPUT_SIZE];
 
@@ -87,6 +91,8 @@ void handle_external_command(char **args)
 
         signal(SIGTSTP, SIG_DFL);
 
+        signal(SIGCHLD, SIG_DFL);
+
         execvp(args[0], args);
 
         perror("execvp");
@@ -157,6 +163,10 @@ void handle_builtin_command(char **args)
     {
         list_jobs();
     }
+    else if (strcmp(args[0], "fg") == 0)
+    {
+        bring_job_to_foreground(count - 1);
+    }
 }
 
 void list_jobs()
@@ -169,7 +179,7 @@ void list_jobs()
 
     while (temp)
     {
-        printf("\t\t%s\n", temp->command);
+        printf("[%d]  stopped\t\t%s\n", temp->job_id, temp->command);
 
         temp = temp->next;
     }
@@ -233,6 +243,10 @@ void add_job(pid_t pid, char *command)
 
     new->pid = pid;
 
+    new->job_id = count;
+
+    count++;
+
     strcpy(new->command, command);
 
     if (head != NULL)
@@ -258,7 +272,6 @@ void add_job(pid_t pid, char *command)
 void main_loop()
 {
     // input
-    char input_string[MAX_INPUT_SIZE];
 
     char *args[MAX_ARGS];
 
@@ -357,6 +370,76 @@ void execute_command(char **args)
     else
     {
         printf("command not found\n");
+    }
+}
+
+void bring_job_to_foreground(int job_id)
+{
+    Job *temp = head;
+
+    if (temp == NULL)
+    {
+        return;
+    }
+
+    while (temp)
+    {
+
+        if (temp->job_id == job_id)
+        {
+            signal(SIGCHLD, SIG_DFL);
+
+            printf("%s\n", temp->command);
+
+            int val = kill(temp->pid, SIGCONT);
+
+            // printf("val is %d\n",val);
+
+            waitpid(temp->pid, NULL, 0);
+
+            signal(SIGCHLD, signal_handler);
+
+            remove_job(temp->pid);
+
+            return;
+        }
+        temp = temp->next;
+    }
+}
+
+void remove_job(pid_t pid)
+{
+    Job *temp = head;
+
+    Job *prev = NULL;
+
+    if (temp->pid == pid)
+    {
+        free(temp);
+
+        head = NULL;
+
+        count--;
+
+        return;
+    }
+
+    while (temp)
+    {
+
+        if (temp->pid == pid)
+        {
+            prev->next = NULL;
+
+            free(temp);
+
+            count--;
+
+            return;
+        }
+        prev = temp;
+
+        temp = temp->next;
     }
 }
 
