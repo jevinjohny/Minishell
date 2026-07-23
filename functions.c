@@ -165,7 +165,15 @@ void handle_builtin_command(char **args)
     }
     else if (strcmp(args[0], "fg") == 0)
     {
-        bring_job_to_foreground(count - 1);
+        Job *temp = head;
+
+        while (temp->next)
+        {
+            temp = temp->next;
+        }
+        int id = temp->job_id;
+
+        bring_job_to_foreground(id);
     }
 }
 
@@ -220,12 +228,23 @@ void signal_handler(int sig)
 
             if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
             {
-                printf(ANSI_COLOR_RED ANSI_BOLD "%s own handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
+                printf(ANSI_COLOR_RED ANSI_BOLD "%s stop handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
             }
         }
     }
     else if (sig == SIGCHLD)
     {
+        // printf("\n");
+
+        if (pidex == 0)
+        {
+            printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
+
+            if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
+            {
+                printf(ANSI_COLOR_RED ANSI_BOLD "%s chld stop handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
+            }
+        }
         add_job(job_pid, input_cpy);
     }
     fflush(stdout);
@@ -391,17 +410,27 @@ void bring_job_to_foreground(int job_id)
 
             printf("%s\n", temp->command);
 
+            pidex=temp->pid;
+
             int val = kill(temp->pid, SIGCONT);
 
             // printf("val is %d\n",val);
+            int status;
 
-            waitpid(temp->pid, NULL, 0);
+            waitpid(temp->pid, &status, WUNTRACED);
 
-            signal(SIGCHLD, signal_handler);
+            if (!WIFSTOPPED(status))
+            {
+                remove_job(temp->pid);
 
-            remove_job(temp->pid);
+                signal(SIGCHLD, signal_handler);
 
-            return;
+                return;
+            }
+            else
+            {
+                return;
+            }
         }
         temp = temp->next;
     }
