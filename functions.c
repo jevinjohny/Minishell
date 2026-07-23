@@ -1,5 +1,8 @@
 #include <stdio.h>
+
 #include "minishell.h"
+
+pid_t pidex;
 
 int count = 1;
 
@@ -39,6 +42,8 @@ void handle_redirection_and_piping(char **ptr)
     {
         pid_t pid = fork();
 
+        pidex=pid;
+
         if (pid == 0)
         {
             char *args[MAX_ARGS];
@@ -65,6 +70,7 @@ void handle_redirection_and_piping(char **ptr)
         }
         else
             pidno[i] = pid;
+        // piidex=0;
     }
 
     for (int i = 0; i < count - 1; i++)
@@ -79,7 +85,6 @@ void handle_redirection_and_piping(char **ptr)
     }
 }
 
-pid_t pidex;
 
 void handle_external_command(char **args)
 {
@@ -166,6 +171,11 @@ void handle_builtin_command(char **args)
     else if (strcmp(args[0], "fg") == 0)
     {
         Job *temp = head;
+
+        if (temp==NULL)
+        {
+            return;
+        }
 
         while (temp->next)
         {
@@ -291,7 +301,6 @@ void add_job(pid_t pid, char *command)
 void main_loop()
 {
     // input
-
     char *args[MAX_ARGS];
 
     init_signal_handlers();
@@ -424,11 +433,17 @@ void bring_job_to_foreground(int job_id)
                 remove_job(temp->pid);
 
                 signal(SIGCHLD, signal_handler);
+                
+                pidex=0;
 
                 return;
             }
             else
             {
+                signal(SIGCHLD, signal_handler);
+
+                pidex=0;
+
                 return;
             }
         }
