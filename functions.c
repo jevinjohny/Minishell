@@ -10,6 +10,8 @@ Job *head = NULL;
 
 pid_t job_pid;
 
+int stat;
+
 char prompt[] = "minishell";
 
 char input_string[MAX_INPUT_SIZE];
@@ -108,7 +110,12 @@ void handle_external_command(char **args)
     {
         job_pid = pidex;
 
-        waitpid(pidex, NULL, WUNTRACED);
+        waitpid(pidex, &stat, WUNTRACED);
+
+        if (WIFSTOPPED(stat))
+        {
+            add_job(job_pid, input_cpy);
+        }
 
         pidex = 0; // after executing one command  and cntrl+z is pressed main prompt will print and pidex will be having the child pid
         // which is >0 so if u press again the cntrl+z it will call ownhandler and pidex==0 will be false and ownhandler prompt will
@@ -255,7 +262,6 @@ void signal_handler(int sig)
                 printf(ANSI_COLOR_RED ANSI_BOLD "%s chld stop handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
             }
         }
-        add_job(job_pid, input_cpy);
     }
     fflush(stdout);
 }
