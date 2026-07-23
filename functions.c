@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include "minishell.h"
 
+Job *head = NULL;
+
+pid_t job_pid;
+
 char prompt[] = "minishell";
+
+char input_cpy[MAX_INPUT_SIZE];
 
 char cwd[MAX_INPUT_SIZE];
 
@@ -89,7 +95,10 @@ void handle_external_command(char **args)
     }
     else
     {
+        job_pid = pidex;
+
         waitpid(pidex, NULL, WUNTRACED);
+
         pidex = 0; // after executing one command  and cntrl+z is pressed main prompt will print and pidex will be having the child pid
         // which is >0 so if u press again the cntrl+z it will call ownhandler and pidex==0 will be false and ownhandler prompt will
         // not print so u need to reset the pidex=0;
@@ -144,6 +153,26 @@ void handle_builtin_command(char **args)
         else
             printf("%s\n", args[1]);
     }
+    else if (strcmp(args[0], "jobs") == 0)
+    {
+        list_jobs();
+    }
+}
+
+void list_jobs()
+{
+    if (head == NULL)
+    {
+        return;
+    }
+    Job *temp = head;
+
+    while (temp)
+    {
+        printf("\t\t%s\n", temp->command);
+
+        temp = temp->next;
+    }
 }
 
 void init_signal_handlers()
@@ -151,6 +180,8 @@ void init_signal_handlers()
     signal(SIGINT, signal_handler);
 
     signal(SIGTSTP, signal_handler);
+
+    signal(SIGCHLD, signal_handler);
 }
 
 void signal_handler(int sig)
@@ -183,7 +214,45 @@ void signal_handler(int sig)
             }
         }
     }
+    else if (sig == SIGCHLD)
+    {
+        add_job(job_pid, input_cpy);
+    }
     fflush(stdout);
+}
+
+void add_job(pid_t pid, char *command)
+{
+    Job *new = malloc(sizeof(Job));
+
+    if (!new)
+    {
+        printf("Failed to allocate memory\n");
+        return;
+    }
+
+    new->pid = pid;
+
+    strcpy(new->command, command);
+
+    if (head != NULL)
+    {
+        Job *temp = head;
+
+        while (temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+        temp->next = new;
+
+        new->next = NULL;
+
+        return;
+    }
+
+    head = new;
+
+    new->next = NULL;
 }
 
 void main_loop()
@@ -224,6 +293,8 @@ void main_loop()
         }
 
         input_string[strcspn(input_string, "\n")] = '\0';
+
+        strcpy(input_cpy, input_string);
 
         if (input_string[0] == '\0')
         {
@@ -292,7 +363,7 @@ void execute_command(char **args)
 int is_builtin_command(char **args)
 {
     // Check if the command is a built-in command (e.g., cd, exit, fg, bg)
-    char *builtins[] = {"echo", "printf", "read", "cd", /*"pwd" */ "pushd", "popd", "dirs", "let", "eval",
+    char *builtins[] = {"fg", "bg", "jobs", "echo", "printf", "read", "cd", /*"pwd" */ "pushd", "popd", "dirs", "let", "eval",
                         "set", "unset", "export", "declare", "typeset", "readonly", "getopts", "source",
                         "exit", "exec", "shopt", "caller", "true", "type", "hash", "bind", "help", NULL};
 
@@ -344,7 +415,9 @@ void parse_command(char *input, char **args)
     while (temp_input != NULL)
     {
         args[i] = temp_input;
+
         i++;
+
         temp_input = strtok(NULL, " ");
     }
     args[i] = NULL;
