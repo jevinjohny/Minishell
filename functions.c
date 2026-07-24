@@ -192,6 +192,10 @@ void handle_builtin_command(char **args)
 
         bring_job_to_foreground(id);
     }
+    else if (strcmp(args[0],"bg")==0)
+    {
+
+    }
 }
 
 void list_jobs()
@@ -421,15 +425,12 @@ void bring_job_to_foreground(int job_id)
 
         if (temp->job_id == job_id)
         {
-            signal(SIGCHLD, SIG_DFL);
-
             printf("%s\n", temp->command);
 
             pidex=temp->pid;
 
             int val = kill(temp->pid, SIGCONT);
 
-            // printf("val is %d\n",val);
             int status;
 
             waitpid(temp->pid, &status, WUNTRACED);
@@ -437,8 +438,6 @@ void bring_job_to_foreground(int job_id)
             if (!WIFSTOPPED(status))
             {
                 remove_job(temp->pid);
-
-                signal(SIGCHLD, signal_handler);
                 
                 pidex=0;
 
@@ -446,8 +445,6 @@ void bring_job_to_foreground(int job_id)
             }
             else
             {
-                signal(SIGCHLD, signal_handler);
-
                 pidex=0;
 
                 return;
