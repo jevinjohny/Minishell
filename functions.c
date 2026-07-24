@@ -44,7 +44,7 @@ void handle_redirection_and_piping(char **ptr)
     {
         pid_t pid = fork();
 
-        pidex=pid;
+        pidex = pid;
 
         if (pid == 0)
         {
@@ -86,7 +86,6 @@ void handle_redirection_and_piping(char **ptr)
         waitpid(pidno[i], &status, WUNTRACED);
     }
 }
-
 
 void handle_external_command(char **args)
 {
@@ -179,7 +178,7 @@ void handle_builtin_command(char **args)
     {
         Job *temp = head;
 
-        if (temp==NULL)
+        if (temp == NULL)
         {
             return;
         }
@@ -192,9 +191,48 @@ void handle_builtin_command(char **args)
 
         bring_job_to_foreground(id);
     }
-    else if (strcmp(args[0],"bg")==0)
+    else if (strcmp(args[0], "bg") == 0)
+    {
+        Job *temp = head;
+
+        if (temp == NULL)
+        {
+            return;
+        }
+
+        while (temp->next)
+        {
+            temp = temp->next;
+        }
+        int id = temp->job_id;
+
+        send_job_to_background(id);
+    }
+}
+
+void send_job_to_background(int job_id)
+{
+    Job *temp = head;
+
+    if (temp == NULL)
+    {
+        return;
+    }
+
+    while (temp)
     {
 
+        if (temp->job_id == job_id)
+        {
+            printf("%s\n", temp->command);
+
+            pidex = temp->pid;
+
+            int val = kill(temp->pid, SIGCONT);
+
+            pidex = 0;
+        }
+        temp = temp->next;
     }
 }
 
@@ -227,44 +265,59 @@ void signal_handler(int sig)
 {
     if (sig == SIGINT)
     {
-        printf("\n");
-
         if (pidex == 0)
         {
-            printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
+            printf(ANSI_COLOR_CYAN ANSI_BOLD "\n%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
 
             if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
             {
                 printf(ANSI_COLOR_RED ANSI_BOLD "%s own handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
             }
         }
+        else
+        {
+            printf("\n");
+        }
     }
     else if (sig == SIGTSTP)
     {
-        printf("\n");
-
         if (pidex == 0)
         {
-            printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
+            // printf("\n");
+            printf(ANSI_COLOR_CYAN ANSI_BOLD "\n%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
 
             if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
             {
                 printf(ANSI_COLOR_RED ANSI_BOLD "%s stop handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
             }
         }
+        else
+        {
+            printf("\n");
+        }
     }
     else if (sig == SIGCHLD)
     {
-        // printf("\n");
+        int status;
 
-        if (pidex == 0)
+        int pid = waitpid(-1, &status, WNOHANG);
+
+        pidex = pid;
+
+        if (pid>0 && !WIFSTOPPED(status))
         {
-            printf(ANSI_COLOR_CYAN ANSI_BOLD "%s:" ANSI_BOLD_RESET ANSI_COLOR_RESET, prompt);
 
-            if (getcwd(cwd, MAX_INPUT_SIZE) != NULL)
-            {
-                printf(ANSI_COLOR_RED ANSI_BOLD "%s chld stop handler$ " ANSI_BOLD_RESET ANSI_COLOR_RESET, cwd);
-            }
+            remove_job(pid);
+
+            pidex = 0;
+
+            return;
+        }
+        else
+        {
+            pidex = 0;
+
+            return;
         }
     }
     fflush(stdout);
@@ -277,8 +330,10 @@ void add_job(pid_t pid, char *command)
     if (!new)
     {
         printf("Failed to allocate memory\n");
+
         return;
     }
+    new->next = NULL;
 
     new->pid = pid;
 
@@ -404,6 +459,7 @@ void execute_command(char **args)
     else if (ret == EXTERNAL)
     {
         handle_external_command(args);
+        // pidex=0;
     }
     else
     {
@@ -422,12 +478,14 @@ void bring_job_to_foreground(int job_id)
 
     while (temp)
     {
-
         if (temp->job_id == job_id)
         {
             printf("%s\n", temp->command);
 
-            pidex=temp->pid;
+            pidex = temp->pid;
+
+            signal(SIGTSTP, SIG_IGN);
+            signal(SIGINT, SIG_IGN);
 
             int val = kill(temp->pid, SIGCONT);
 
@@ -435,17 +493,20 @@ void bring_job_to_foreground(int job_id)
 
             waitpid(temp->pid, &status, WUNTRACED);
 
+            signal(SIGTSTP, signal_handler);
+            signal(SIGINT, signal_handler);
+
             if (!WIFSTOPPED(status))
             {
                 remove_job(temp->pid);
-                
-                pidex=0;
+
+                pidex = 0;
 
                 return;
             }
             else
             {
-                pidex=0;
+                pidex = 0;
 
                 return;
             }

@@ -16,7 +16,3 @@ int main()
 
 
 
-void send_job_to_background(int job_id)
-{
-    // Send a job to the background
-}
